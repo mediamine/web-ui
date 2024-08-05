@@ -6,7 +6,10 @@ interface TypeProps {
 export interface FormatTypeProps extends TypeProps {}
 export interface NewsTypeProps extends TypeProps {}
 export interface RoleTypeProps extends TypeProps {}
-export interface PublicationProps extends TypeProps {}
+export interface PublicationProps extends TypeProps {
+  mediatypes?: Array<string>;
+  tiers?: Array<string>;
+}
 export interface PublicationMediaTypeProps {
   mediatype: string;
 }
@@ -27,26 +30,16 @@ export interface JournalistProps {
   linkedin?: string;
   twitter?: string;
   datasource?: string;
-  format_types?: Array<{
-    id: string;
-    name: string;
-  }>;
-  news_types?: Array<{
-    id: string;
-    name: string;
-  }>;
-  role_types?: Array<{
-    id: string;
-    name: string;
-  }>;
-  publications?: Array<{
-    id: string;
-    name: string;
-    mediatypes?: Array<string>;
-    tiers?: Array<string>;
-  }>;
-  regions?: Array<{
-    id: string;
-    name: string;
-  }>;
+  format_types?: Array<FormatTypeProps>;
+  news_types?: Array<NewsTypeProps>;
+  role_types?: Array<RoleTypeProps>;
+  publications?: Array<PublicationProps>;
+  regions?: Array<RegionProps>;
+}
+
+export interface JournalistSearchProps {
+  uuid: string;
+  name: string;
+  search: string;
+  journalists: string;
 }

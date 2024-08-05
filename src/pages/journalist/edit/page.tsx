@@ -2,8 +2,8 @@
 
 import { FormControlAutocompleteMulti } from '@/components/mui/formControls/autocomplete/multi';
 import { FormControlTextField } from '@/components/mui/formControls/textField';
-import { FormatTypeProps, JournalistProps, NewsTypeProps, PublicationProps, RegionProps, RoleTypeProps } from '@/models/journalist';
 import { useToast } from '@/providers/ToastProvider';
+import { FormatTypeProps, JournalistProps, NewsTypeProps, PublicationProps, RegionProps, RoleTypeProps } from '@/types/journalist';
 import HowToRegIcon from '@mui/icons-material/HowToReg';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import { Box, Button, CircularProgress, IconButton, InputAdornment, Paper, Typography } from '@mui/material';

@@ -1,29 +1,31 @@
-import { DialogForm } from '@/components/mui/dialog';
 import { FormControlAutocompleteMulti } from '@/components/mui/formControls/autocomplete/multi';
 import { FormControlAutocompleteSingle } from '@/components/mui/formControls/autocomplete/single';
 import { FormControlTextField } from '@/components/mui/formControls/textField';
+import { useToast } from '@/providers/ToastProvider';
 import {
   FormatTypeProps,
+  JournalistSearchProps,
   NewsTypeProps,
   PublicationMediaTypeProps,
   PublicationProps,
   PublicationTierProps,
   RegionProps,
   RoleTypeProps
-} from '@/models/journalist';
-import { useToast } from '@/providers/ToastProvider';
+} from '@/types/journalist';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import { Button, Checkbox, Divider, FormControl, Paper, TextField } from '@mui/material';
+import { Button, Checkbox, Divider, Paper } from '@mui/material';
 import axios from 'axios';
 import { debounce, isEmpty, uniqBy } from 'lodash';
 import { useRouter } from 'next/navigation';
 import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
+import DeleteJournalistSearch from './deleteJournalistSearch';
+import SaveJournalistSearch from './saveJournalistSearch';
 
 const HOSTNAME = process.env.NEXT_PUBLIC_MEDIAMINE_API_HOSTNAME;
 
 interface AdvancedSearchProps {
-  setOpenSearchDrawer: (open: boolean) => void;
+  setOpenSearchDrawer: Dispatch<SetStateAction<boolean>>;
   filterByName: string;
   setFilterByName: Dispatch<SetStateAction<string>>;
   filterByNameDebounced: string;
@@ -52,13 +54,7 @@ interface AdvancedSearchProps {
   setPage: Dispatch<SetStateAction<number>>;
   setSelected: Dispatch<SetStateAction<Array<string>>>;
   resetSearch: () => void;
-}
-
-interface JournalistSearchProps {
-  uuid: string;
-  name: string;
-  search: string;
-  journalists: string;
+  setSelectedByJournalistSearch: Dispatch<SetStateAction<JournalistSearchProps | undefined>>;
 }
 
 export const AdvancedSearch: FC<AdvancedSearchProps> = ({
@@ -90,13 +86,14 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
   setFilterByRegions,
   setPage,
   setSelected,
-  resetSearch
+  resetSearch,
+  setSelectedByJournalistSearch
 }) => {
   const router = useRouter();
   const { toast } = useToast();
   const [journalistSearches, setJournalistSearches] = useState<Array<JournalistSearchProps>>([]);
   const [journalistSearchesInput, setJournalistSearchesInput] = useState<string | null>();
-  const [filterByJournalistSearches, setFilterByJournalistSearches] = useState<JournalistSearchProps>();
+  const [filterByJournalistSearch, setFilterByJournalistSearch] = useState<JournalistSearchProps>();
   const [isSaveEnabled, setIsSaveEnabled] = useState(false);
   const [searchName, setSearchName] = useState<string | null>();
   const [showConfirmSaveSearchDialog, setShowConfirmSaveSearchDialog] = useState(false);
@@ -132,9 +129,9 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
   }, [journalistSearchesInput]);
 
   useEffect(() => {
-    if (filterByJournalistSearches?.search) {
+    if (filterByJournalistSearch?.search) {
       try {
-        const d = JSON.parse(filterByJournalistSearches?.search as unknown as string);
+        const d = JSON.parse(filterByJournalistSearch?.search as unknown as string);
         if (d.filterByNameDebounced) setFilterByName(d.filterByNameDebounced);
         if (d.filterByPublications) setFilterByPublications(d.filterByPublications);
         if (d.filterByPublicationMediatypes) setFilterByPublicationMediatypes(d.filterByPublicationMediatypes);
@@ -147,82 +144,19 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
       }
     }
 
-    // TBD
-    // if (filterByJournalistSearches?.journalists) {
-    //   try {
-    //     const d = JSON.parse(filterByJournalistSearches?.journalists as unknown as string);
-    //     setSelected(d);
-    //   } catch (error) {
-    //     console.error('Unable to parse the filterByJournalistSearches string');
-    //   }
-    // }
-
-    setSearchName(filterByJournalistSearches?.name);
-  }, [filterByJournalistSearches]);
-
-  const onSaveJournalistSearch = (copy: boolean) => {
-    const payload = {
-      name: searchName,
-      description: searchName,
-      search: JSON.stringify({
-        ...(!isEmpty(filterByNameDebounced) && { filterByNameDebounced }),
-        ...(!isEmpty(filterByPublications) && { filterByPublications }),
-        ...(!isEmpty(filterByPublicationMediatypes) && { filterByPublicationMediatypes }),
-        ...(!isEmpty(filterByPublicationTiers) && { filterByPublicationTiers }),
-        ...(!isEmpty(filterByFormatTypes) && { filterByFormatTypes }),
-        ...(!isEmpty(filterByNewsTypes) && { filterByNewsTypes }),
-        ...(!isEmpty(filterByRoleTypes) && { filterByRoleTypes })
-      })
-    };
-
-    if (filterByJournalistSearches?.uuid && !copy) {
-      axios
-        .put(`${HOSTNAME}/journalist-search/${filterByJournalistSearches?.uuid}`, payload)
-        .then(() => {
-          toast('Journalist Search Details are saved successfully.');
-          setShowConfirmSaveSearchDialog(false);
-          setOpenSearchDrawer(false);
-          resetSearch();
-        })
-        .catch((err) => {
-          if (err.response.status === 401) {
-            router.push('/login?referrer=/journalist');
-          }
-        });
-    } else {
-      axios
-        .post(`${HOSTNAME}/journalist-search`, payload)
-        .then(() => {
-          toast('Journalist Search Details are saved successfully.');
-          setShowConfirmSaveSearchDialog(false);
-          setOpenSearchDrawer(false);
-          resetSearch();
-        })
-        .catch((err) => {
-          if (err.response.status === 401) {
-            router.push('/login?referrer=/journalist');
-          }
-        });
+    if (filterByJournalistSearch?.journalists) {
+      try {
+        const d = JSON.parse(filterByJournalistSearch?.journalists);
+        setSelected(d);
+        // To pass the details of the selected search to the parent component which will require them to update more selections
+        setSelectedByJournalistSearch(filterByJournalistSearch);
+      } catch (error) {
+        console.error('Unable to parse the filterByJournalistSearches string');
+      }
     }
-  };
 
-  const onDeleteJournalistSearch = () => {
-    if (filterByJournalistSearches?.uuid) {
-      axios
-        .delete(`${HOSTNAME}/journalist-search/${filterByJournalistSearches?.uuid}`)
-        .then(() => {
-          toast('Journalist Search Details are deleted successfully.');
-          setShowConfirmDeleteSearchDialog(false);
-          setOpenSearchDrawer(false);
-          resetSearch();
-        })
-        .catch((err) => {
-          if (err.response.status === 401) {
-            router.push('/login?referrer=/journalist');
-          }
-        });
-    }
-  };
+    setSearchName(filterByJournalistSearch?.name);
+  }, [filterByJournalistSearch]);
 
   return (
     <>
@@ -230,11 +164,11 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
         <FormControlAutocompleteSingle
           id="journalist-searches"
           options={journalistSearches}
-          value={filterByJournalistSearches}
+          value={filterByJournalistSearch}
           label={'Load Saved List'}
           onInputChange={(_e, newValue): void => dJournalistSearches(newValue)}
           onChange={(_e, newValue) => {
-            if (newValue) setFilterByJournalistSearches(newValue);
+            if (newValue) setFilterByJournalistSearch(newValue);
           }}
         />
 
@@ -311,7 +245,7 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
         />
 
         <FormControlAutocompleteMulti
-          id={'news-types'}
+          id={'format-types'}
           options={formatTypes}
           value={filterByFormatTypes}
           label={'Format Types'}
@@ -335,7 +269,7 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
         />
 
         <FormControlAutocompleteMulti
-          id={'job-titles'}
+          id={'role-types'}
           options={roleTypes}
           value={filterByRoleTypes}
           label={'Job Titles'}
@@ -353,7 +287,7 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
             variant="contained"
             color="error"
             onClick={() => setShowConfirmDeleteSearchDialog(true)}
-            disabled={!filterByJournalistSearches}
+            disabled={!filterByJournalistSearch}
           >
             Delete
           </Button>
@@ -374,50 +308,33 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
         </div>
       </Paper>
 
-      <DialogForm
-        open={showConfirmSaveSearchDialog}
-        title={'Save List'}
-        onCancel={() => setShowConfirmSaveSearchDialog(false)}
-        moreActions={
-          <>
-            <Button variant="contained" color="primary" onClick={() => onSaveJournalistSearch(false)}>
-              Save
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => onSaveJournalistSearch(true)}
-              disabled={Boolean(searchName && journalistSearches.find((s) => s?.name === searchName))}
-            >
-              Save a Copy
-            </Button>
-          </>
-        }
-      >
-        <FormControl size="small" className="w-full p-4">
-          {showConfirmSaveSearchDialog && (
-            <TextField
-              id="search-name"
-              variant="outlined"
-              color="primary"
-              size="small"
-              label="Name"
-              value={searchName}
-              onChange={(e) => setSearchName(e.target.value)}
-            />
-          )}
-        </FormControl>
-      </DialogForm>
+      <SaveJournalistSearch
+        {...{
+          search: JSON.stringify({
+            ...(!isEmpty(filterByNameDebounced) && { filterByNameDebounced }),
+            ...(!isEmpty(filterByPublications) && { filterByPublications }),
+            ...(!isEmpty(filterByPublicationMediatypes) && { filterByPublicationMediatypes }),
+            ...(!isEmpty(filterByPublicationTiers) && { filterByPublicationTiers }),
+            ...(!isEmpty(filterByFormatTypes) && { filterByFormatTypes }),
+            ...(!isEmpty(filterByNewsTypes) && { filterByNewsTypes }),
+            ...(!isEmpty(filterByRoleTypes) && { filterByRoleTypes })
+          }),
+          filterByJournalistSearch,
+          showConfirmSaveSearchDialog,
+          setShowConfirmSaveSearchDialog,
+          setOpenSearchDrawer,
+          resetSearch
+        }}
+      />
 
-      <DialogForm
-        open={showConfirmDeleteSearchDialog}
-        title={'Are you sure you want to delete the Saved List?'}
-        onCancel={() => setShowConfirmDeleteSearchDialog(false)}
-        moreActions={
-          <Button variant="contained" color="error" onClick={onDeleteJournalistSearch}>
-            Delete
-          </Button>
-        }
+      <DeleteJournalistSearch
+        {...{
+          filterByJournalistSearch,
+          showConfirmDeleteSearchDialog,
+          setShowConfirmDeleteSearchDialog,
+          setOpenSearchDrawer,
+          resetSearch
+        }}
       />
     </>
   );

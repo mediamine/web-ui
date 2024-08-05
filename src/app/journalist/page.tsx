@@ -2,21 +2,23 @@
 
 import { FormControlAutocompleteMulti } from '@/components/mui/formControls/autocomplete/multi';
 import { FormControlTextField } from '@/components/mui/formControls/textField';
-import { StyledTableCell, StyledTableRow } from '@/components/mui/table/styledComponents';
+import { JournalistDetails } from '@/pages/journalist/details/page';
+import EditJournalist from '@/pages/journalist/edit/page';
+import SaveJournalistSelect from '@/pages/journalist/list/saveJournalistSelect';
+import { AdvancedSearch } from '@/pages/journalist/list/search';
+import JournalistListTable from '@/pages/journalist/list/table';
+import { ToastProvider, useToast } from '@/providers/ToastProvider';
 import {
   FormatTypeProps,
   JournalistProps,
+  JournalistSearchProps,
   NewsTypeProps,
   PublicationMediaTypeProps,
   PublicationProps,
   PublicationTierProps,
   RegionProps,
   RoleTypeProps
-} from '@/models/journalist';
-import { JournalistDetails } from '@/pages/journalist/details/page';
-import EditJournalist from '@/pages/journalist/edit/page';
-import { AdvancedSearch } from '@/pages/journalist/list/search';
-import { ToastProvider } from '@/providers/ToastProvider';
+} from '@/types/journalist';
 import AddIcon from '@mui/icons-material/Add';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
@@ -26,15 +28,14 @@ import EmailIcon from '@mui/icons-material/Email';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
+import SaveIcon from '@mui/icons-material/Save';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import {
-  Alert,
   AppBar,
   Badge,
   Box,
   Button,
   Checkbox,
-  CircularProgress,
   ClickAwayListener,
   Divider,
   Drawer,
@@ -43,22 +44,15 @@ import {
   MenuList,
   Paper,
   Popover,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
   Toolbar,
   Tooltip,
   Typography
 } from '@mui/material';
-import TableRow from '@mui/material/TableRow';
 import axios from 'axios';
 import { debounce, flatMap, isEmpty, uniq } from 'lodash';
 import { useRouter } from 'next/navigation';
-import React, { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { classes, stylesheet } from 'typestyle';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { stylesheet } from 'typestyle';
 
 const HOSTNAME = process.env.NEXT_PUBLIC_MEDIAMINE_API_HOSTNAME;
 
@@ -126,9 +120,10 @@ export default function Journalists() {
   const [journalistId, setJournalistId] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // TODO: for saving journalists selected
-  // const [searchName, setSearchName] = useState<string | null>();
-  // const [filterByJournalistSearchesUuid, setFilterByJournalistSearchesUuid] = useState<string>();
+  const { toast } = useToast();
+
+  const [selectedByJournalistSearch, setSelectedByJournalistSearch] = useState<JournalistSearchProps>();
+  const [showConfirmSaveSearchDialog, setShowConfirmSaveSearchDialog] = useState(false);
 
   const getJournalists = () => {
     setIsLoading(true);
@@ -199,44 +194,6 @@ export default function Journalists() {
       })
       .catch((err) => console.error(err));
 
-  // TODO: for saving journalists selected
-  // const saveJournalistSearch = (copy: boolean) => {
-  //   const payload = {
-  //     name: searchName,
-  //     description: searchName,
-  //     journalists: JSON.stringify(selected)
-  //   };
-
-  //   if (filterByJournalistSearchesUuid && !copy) {
-  //     axios
-  //       .put(`${HOSTNAME}/journalist-search/${filterByJournalistSearchesUuid}`, payload)
-  //       .then(() => {
-  //         useToast('Journalist Search Details are saved successfully.');
-  //         setOpenSearchDrawer(false);
-  //         setSearchName(null);
-  //       })
-  //       .catch((err) => {
-  //         if (err.response.status === 401) {
-  //           router.push('/login?referrer=/journalist');
-  //         }
-  //       });
-  //   } else {
-  //     axios
-  //       .post(`${HOSTNAME}/journalist-search`, payload)
-  //       .then(() => {
-  //         useToast('Journalist Search Details are saved successfully.');
-  //         setOpenSearchDrawer(false);
-  //         setSearchName(null);
-  //       })
-  //       .catch((err) => {
-  //         if (err.response.status === 401) {
-  //           router.push('/login?referrer=/journalist');
-  //         }
-  //       })
-  //       .finally(() => setShowConfirmSaveSearchDialog(false));
-  //   }
-  // };
-
   const exportJournalists = () =>
     axios
 
@@ -292,7 +249,7 @@ export default function Journalists() {
         validEmail: !showFailedEmailValidation
       })
       .then(() => {
-        console.log('Journalists are archived successfully.');
+        toast('Journalists are archived successfully.');
         setSelected([]);
         getJournalists();
       })
@@ -317,7 +274,7 @@ export default function Journalists() {
         validEmail: !showFailedEmailValidation
       })
       .then(() => {
-        console.log('Journalists are validated successfully.');
+        toast('Journalists are validated successfully.');
         setSelected([]);
         getJournalists();
       })
@@ -563,6 +520,8 @@ export default function Journalists() {
     setFilterByNewsTypes([]);
     setFilterByRoleType([]);
     setFilterByRegions([]);
+    setSelectAll(false);
+    setSelected([]);
   };
 
   return (
@@ -573,22 +532,22 @@ export default function Journalists() {
             <Box className="flex gap-8">
               <Typography variant="h6">Journalist Directory</Typography>
             </Box>
+
             <Box className="flex gap-8">
-              {/* TODO: Save Journalists
-                <Badge color="error" badgeContent={selected.length}>
-                  <Tooltip title="Save Journalists" arrow>
-                    <Button
-                      variant="contained"
-                      color="inherit"
-                      aria-label="save"
-                      onClick={() => setShowConfirmSaveSearchDialog(true)}
-                      disabled={selected.length === 0}
-                    >
-                      <SaveIcon fontSize="small" color="primary" />
-                    </Button>
-                  </Tooltip>
-                </Badge>
-              */}
+              <Badge color="error" badgeContent={selected.length}>
+                <Tooltip title="Save Journalists" arrow>
+                  <Button
+                    variant="contained"
+                    color="inherit"
+                    aria-label="save"
+                    onClick={() => setShowConfirmSaveSearchDialog(true)}
+                    disabled={selected.length === 0}
+                  >
+                    <SaveIcon fontSize="small" color="primary" />
+                  </Button>
+                </Tooltip>
+              </Badge>
+
               <Badge color="error" badgeContent={selected.length}>
                 <Tooltip title="Email Journalists" arrow>
                   <Button
@@ -605,6 +564,7 @@ export default function Journalists() {
                   </Button>
                 </Tooltip>
               </Badge>
+
               <Badge color="error" badgeContent={selectAll ? total : selected.length}>
                 <Tooltip title="Export Journalists" arrow>
                   <Button
@@ -618,6 +578,7 @@ export default function Journalists() {
                   </Button>
                 </Tooltip>
               </Badge>
+
               <IconButton
                 ref={anchorRefUserAccountActions}
                 id="composition-button"
@@ -629,6 +590,7 @@ export default function Journalists() {
               >
                 <PersonIcon />
               </IconButton>
+
               <Popover
                 open={openUserAccountActions}
                 anchorEl={anchorRefUserAccountActions.current}
@@ -683,6 +645,7 @@ export default function Journalists() {
             </Box>
           </Toolbar>
         </AppBar>
+
         <Paper className="px-8 py-2 rounded-none">
           <div className="py-2 flex justify-between">
             <div className="flex gap-4">
@@ -732,7 +695,9 @@ export default function Journalists() {
                   Filters
                 </Button>
               </Badge>
+
               <Divider orientation="vertical" flexItem />
+
               <Button
                 variant="text"
                 onClick={() => {
@@ -743,6 +708,7 @@ export default function Journalists() {
                 Reset Filters
               </Button>
             </div>
+
             <div className="flex gap-8">
               {isEditor && (
                 <Tooltip title="Add Journalist" arrow>
@@ -759,6 +725,7 @@ export default function Journalists() {
                   </Button>
                 </Tooltip>
               )}
+
               {isEditor && (
                 <Badge
                   {...(journalistsWithFailedEmailValidation > 0 && { color: 'error' })}
@@ -774,6 +741,7 @@ export default function Journalists() {
                   </Tooltip>
                 </Badge>
               )}
+
               {isEditor && (
                 <Badge color="error" badgeContent={selectAll ? total : selected.length}>
                   <Tooltip title="Validate Journalists" arrow>
@@ -788,6 +756,7 @@ export default function Journalists() {
                   </Tooltip>
                 </Badge>
               )}
+
               {isEditor && (
                 <Badge color="error" badgeContent={selectAll ? total : selected.length}>
                   <Tooltip title="Archive Journalists" arrow>
@@ -805,125 +774,28 @@ export default function Journalists() {
               )}
             </div>
           </div>
-          {isLoading ? (
-            <Box className="flex justify-center items-center">
-              <CircularProgress />
-            </Box>
-          ) : (
-            <>
-              {isEditor && (
-                <Alert
-                  variant="standard"
-                  severity="info"
-                  className={`mb-2 py-0 ${selected.length === rowsPerPage ? 'visible' : 'invisible'}`}
-                  icon={false}
-                >
-                  {selectAll ? (
-                    <Typography variant="body2" className="leading-6">
-                      All journalists are selected
-                    </Typography>
-                  ) : (
-                    <div className="flex">
-                      <Typography variant="body2" className="leading-6">
-                        All journalists on this page are selected.
-                      </Typography>
-                      <Button variant="text" className="py-0 leading-6" onClick={() => setSelectAll(true)}>
-                        Select all journalists
-                      </Button>
-                    </div>
-                  )}
-                </Alert>
-              )}
-              <TableContainer className={classes(styles.table)}>
-                <Table stickyHeader padding="none" aria-label="sticky table">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell padding="checkbox">
-                        <Checkbox
-                          color="primary"
-                          indeterminate={selected.length > 0 && selected.length < rowsPerPage}
-                          checked={selected.length === rowsPerPage}
-                          onChange={(event: ChangeEvent<HTMLInputElement>, checked: boolean) => {
-                            if (checked) {
-                              setSelected(journalists.map((d: JournalistProps) => d.uuid!));
-                            } else {
-                              setSelected([]);
-                              setSelectAll(false);
-                            }
-                          }}
-                        />
-                      </TableCell>
-                      {columns.map((column) => (
-                        <TableCell key={column.id} align={column.align} style={{ minWidth: column.minWidth, width: column.width }}>
-                          <Typography variant="body2" className="px-4">
-                            {column.label}
-                          </Typography>
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {journalists.map((row: JournalistProps) => {
-                      return (
-                        <StyledTableRow hover role="checkbox" tabIndex={-1} key={row.id}>
-                          <TableCell padding="checkbox">
-                            <Checkbox
-                              color="primary"
-                              checked={selected.includes(row.uuid!)}
-                              onChange={(event: ChangeEvent<HTMLInputElement>, checked: boolean) => {
-                                if (checked && !selected.includes(row.uuid!)) {
-                                  setSelected(selected.concat(row.uuid!));
-                                }
-                                if (!checked && selected.includes(row.uuid!)) {
-                                  setSelected(selected.filter((d) => d !== row.uuid));
-                                }
-                              }}
-                            />
-                          </TableCell>
-                          {columns.map((column) => {
-                            const value = row[column.id!]!;
-                            return (
-                              <StyledTableCell
-                                key={column.id}
-                                align={column.align}
-                                style={{ minWidth: column.minWidth, width: column.width }}
-                              >
-                                <div className="inline-block" style={{ width: column.width }}>
-                                  <Typography variant="body2" gutterBottom className="w-full flex px-4">
-                                    <>
-                                      {column.Cell
-                                        ? column.Cell(
-                                            { value, row }
-                                            //TODO: router.push when clicked on a link element
-                                          )
-                                        : value}
-                                    </>
-                                  </Typography>
-                                </div>
-                              </StyledTableCell>
-                            );
-                          })}
-                        </StyledTableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              <TablePagination
-                component="div"
-                count={total}
-                page={page}
-                onPageChange={(event: React.MouseEvent<HTMLButtonElement> | null, newPage: number): void => setPage(newPage)}
-                rowsPerPage={rowsPerPage}
-                rowsPerPageOptions={[25, 50, 100, 200]}
-                onRowsPerPageChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
-                  setRowsPerPage(parseInt(event.target.value, 10));
-                  setPage(0);
-                }}
-              />
-            </>
-          )}
+
+          <JournalistListTable
+            {...{
+              isEditor,
+              journalists,
+              page,
+              setPage,
+              rowsPerPage,
+              setRowsPerPage,
+              total,
+              selected,
+              setSelected,
+              selectAll,
+              setSelectAll,
+              isLoading,
+              setJournalistId,
+              setOpenEditDrawer,
+              setOpenDetailsDrawer
+            }}
+          />
         </Paper>
+
         <Drawer
           anchor={'right'}
           open={openEditDrawer}
@@ -935,6 +807,7 @@ export default function Journalists() {
         >
           <EditJournalist {...{ id: journalistId, setOpenEditDrawer }} />
         </Drawer>
+
         <Drawer
           anchor={'right'}
           open={openDetailsDrawer}
@@ -946,6 +819,7 @@ export default function Journalists() {
         >
           <JournalistDetails {...{ id: journalistId, setOpenDetailsDrawer }} />
         </Drawer>
+
         <Drawer
           anchor={'right'}
           open={openSearchDrawer}
@@ -984,10 +858,15 @@ export default function Journalists() {
               setFilterByRegions,
               setPage,
               setSelected,
-              resetSearch
+              resetSearch,
+              setSelectedByJournalistSearch
             }}
           />
         </Drawer>
+
+        <SaveJournalistSelect
+          {...{ selected, selectedByJournalistSearch, showConfirmSaveSearchDialog, setShowConfirmSaveSearchDialog, resetSearch }}
+        />
       </div>
     </ToastProvider>
   );

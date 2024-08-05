@@ -1,6 +1,6 @@
 'use client';
 
-import { JournalistProps } from '@/models/journalist';
+import { JournalistProps } from '@/types/journalist';
 
 import EmailIcon from '@mui/icons-material/Email';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
