@@ -90,6 +90,7 @@ export default function SaveJournalistSearch({
   return (
     <DialogForm
       open={showConfirmSaveSearchDialog}
+      setOpen={setShowConfirmSaveSearchDialog}
       title={'Save List'}
       onCancel={() => setShowConfirmSaveSearchDialog(false)}
       moreActions={

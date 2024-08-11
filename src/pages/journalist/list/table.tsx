@@ -1,6 +1,8 @@
 'use client';
 
 import { StyledTableCell, StyledTableRow } from '@/components/mui/table/styledComponents';
+import { usePermissions } from '@/providers/AuthProvider';
+import { AsyncState } from '@/types/asyncState';
 import { JournalistProps } from '@/types/journalist';
 import {
   Alert,
@@ -36,8 +38,7 @@ interface Column {
 }
 
 interface JournalistsTableProps {
-  isEditor: boolean;
-  journalists: Array<JournalistProps>;
+  journalists: AsyncState<Array<JournalistProps>>;
   page: number;
   setPage: Dispatch<SetStateAction<number>>;
   rowsPerPage: number;
@@ -47,15 +48,17 @@ interface JournalistsTableProps {
   setSelected: Dispatch<SetStateAction<Array<string>>>;
   selectAll: boolean;
   setSelectAll: Dispatch<SetStateAction<boolean>>;
-  isLoading: boolean;
   setJournalistId: Dispatch<SetStateAction<string | undefined>>;
   setOpenEditDrawer: Dispatch<SetStateAction<boolean>>;
   setOpenDetailsDrawer: Dispatch<SetStateAction<boolean>>;
 }
 
 export default function JournalistListTable({
-  isEditor,
-  journalists = [],
+  journalists = {
+    isLoading: true,
+    hasError: false,
+    value: []
+  },
   page,
   setPage,
   rowsPerPage,
@@ -65,11 +68,12 @@ export default function JournalistListTable({
   setSelected,
   selectAll,
   setSelectAll,
-  isLoading,
   setJournalistId,
   setOpenEditDrawer,
   setOpenDetailsDrawer
 }: JournalistsTableProps) {
+  const { isEditor } = usePermissions();
+
   const columns: Column[] = [
     {
       id: 'first_name',
@@ -213,8 +217,8 @@ export default function JournalistListTable({
 
   return (
     <>
-      {isLoading ? (
-        <Box className="flex justify-center items-center">
+      {journalists.isLoading ? (
+        <Box className={classes('flex justify-center items-center', styles.loader)}>
           <CircularProgress />
         </Box>
       ) : (
@@ -253,7 +257,7 @@ export default function JournalistListTable({
                       checked={selected.length === rowsPerPage}
                       onChange={(event: ChangeEvent<HTMLInputElement>, checked: boolean) => {
                         if (checked) {
-                          setSelected(journalists.map((d: JournalistProps) => d.uuid!));
+                          setSelected(journalists.value?.map((d: JournalistProps) => d.uuid!) ?? []);
                         } else {
                           setSelected([]);
                           setSelectAll(false);
@@ -271,7 +275,7 @@ export default function JournalistListTable({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {journalists.map((row: JournalistProps) => {
+                {journalists.value?.map((row: JournalistProps) => {
                   return (
                     <StyledTableRow hover role="checkbox" tabIndex={-1} key={row.id}>
                       <TableCell padding="checkbox">
@@ -334,5 +338,8 @@ export default function JournalistListTable({
 const styles = stylesheet({
   table: {
     maxHeight: 'calc(100vh - 350px)'
+  },
+  loader: {
+    minHeight: 'calc(100vh - 150px)'
   }
 });

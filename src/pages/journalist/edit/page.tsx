@@ -431,7 +431,7 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
             <Paper className="sticky bottom-0 px-8 py-4 rounded-none z-50 shadow-sm flex justify-between">
               <div className="flex gap-2 justify-end">
                 {id && (
-                  <Button variant="contained" color="error" className="bg-red-500" onClick={onArchiveJournalist}>
+                  <Button variant="contained" color="error" onClick={onArchiveJournalist}>
                     Archive
                   </Button>
                 )}
@@ -440,7 +440,7 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
                 <Button variant="outlined" onClick={() => setOpenEditDrawer(false)}>
                   Cancel
                 </Button>
-                <Button variant="contained" className="bg-blue-500" onClick={onSaveJournalist}>
+                <Button variant="contained" onClick={onSaveJournalist}>
                   Save
                 </Button>
               </div>

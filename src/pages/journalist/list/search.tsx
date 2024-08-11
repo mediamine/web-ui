@@ -1,7 +1,6 @@
 import { FormControlAutocompleteMulti } from '@/components/mui/formControls/autocomplete/multi';
 import { FormControlAutocompleteSingle } from '@/components/mui/formControls/autocomplete/single';
 import { FormControlTextField } from '@/components/mui/formControls/textField';
-import { useToast } from '@/providers/ToastProvider';
 import {
   FormatTypeProps,
   JournalistSearchProps,
@@ -51,10 +50,12 @@ interface AdvancedSearchProps {
   regions: Array<RegionProps>;
   filterByRegions: Array<RegionProps>;
   setFilterByRegions: Dispatch<SetStateAction<Array<RegionProps>>>;
+  setFilterByJournalistIds: Dispatch<SetStateAction<Array<string>>>;
   setPage: Dispatch<SetStateAction<number>>;
   setSelected: Dispatch<SetStateAction<Array<string>>>;
   resetSearch: () => void;
-  setSelectedByJournalistSearch: Dispatch<SetStateAction<JournalistSearchProps | undefined>>;
+  // TODO: remove
+  // setSelectedByJournalistSearch: Dispatch<SetStateAction<JournalistSearchProps | undefined>>;
 }
 
 export const AdvancedSearch: FC<AdvancedSearchProps> = ({
@@ -84,18 +85,22 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
   regions,
   filterByRegions,
   setFilterByRegions,
+  setFilterByJournalistIds,
   setPage,
   setSelected,
-  resetSearch,
-  setSelectedByJournalistSearch
+  resetSearch
+  // TODO: remove
+  // setSelectedByJournalistSearch
 }) => {
   const router = useRouter();
-  const { toast } = useToast();
+  // TODO: remove
+  // const { toast } = useToast();
   const [journalistSearches, setJournalistSearches] = useState<Array<JournalistSearchProps>>([]);
   const [journalistSearchesInput, setJournalistSearchesInput] = useState<string | null>();
   const [filterByJournalistSearch, setFilterByJournalistSearch] = useState<JournalistSearchProps>();
   const [isSaveEnabled, setIsSaveEnabled] = useState(false);
-  const [searchName, setSearchName] = useState<string | null>();
+  // TODO: remove
+  // const [searchName, setSearchName] = useState<string | null>();
   const [showConfirmSaveSearchDialog, setShowConfirmSaveSearchDialog] = useState(false);
   const [showConfirmDeleteSearchDialog, setShowConfirmDeleteSearchDialog] = useState(false);
 
@@ -147,15 +152,18 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
     if (filterByJournalistSearch?.journalists) {
       try {
         const d = JSON.parse(filterByJournalistSearch?.journalists);
-        setSelected(d);
+        if (d) setFilterByJournalistIds(d);
+        // TODO: remove
+        // setSelected(d);
         // To pass the details of the selected search to the parent component which will require them to update more selections
-        setSelectedByJournalistSearch(filterByJournalistSearch);
+        // setSelectedByJournalistSearch(filterByJournalistSearch);
       } catch (error) {
         console.error('Unable to parse the filterByJournalistSearches string');
       }
     }
 
-    setSearchName(filterByJournalistSearch?.name);
+    // TODO: remove
+    // setSearchName(filterByJournalistSearch?.name);
   }, [filterByJournalistSearch]);
 
   return (

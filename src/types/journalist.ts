@@ -42,4 +42,5 @@ export interface JournalistSearchProps {
   name: string;
   search: string;
   journalists: string;
+  inputValue?: string;
 }

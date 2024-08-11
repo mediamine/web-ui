@@ -24,6 +24,7 @@ function Login() {
         if (referrer) {
           router.push(referrer);
         } else {
+          // TODO: remove after more pages are added
           router.push('/journalist');
         }
       })
@@ -60,7 +61,7 @@ function Login() {
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
           </FormControl>
-          <Button type="submit" variant="contained" className="bg-blue-500" onClick={onSubmit}>
+          <Button type="submit" variant="contained" onClick={onSubmit}>
             Log In
           </Button>
         </Box>

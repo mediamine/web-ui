@@ -13,6 +13,7 @@ interface FormControlAutocompleteSingleProps<T extends Option> {
   label: string;
   onChange: (_e: any, newValue: T | null) => void;
   onInputChange?: (_e: any, newValue: string) => void;
+  disablePortal?: boolean;
 }
 
 export function FormControlAutocompleteSingle<T extends Option>({
@@ -22,7 +23,8 @@ export function FormControlAutocompleteSingle<T extends Option>({
   value,
   label,
   onChange,
-  onInputChange
+  onInputChange,
+  disablePortal = true
 }: FormControlAutocompleteSingleProps<T>) {
   return (
     <FormControl size="small" className={addClassName ?? 'w-full'}>
@@ -33,9 +35,9 @@ export function FormControlAutocompleteSingle<T extends Option>({
           // TODO: needs to be reset from the browser url query param
           value,
           onChange,
-          onInputChange
+          onInputChange,
+          disablePortal
         }}
-        disablePortal
         getOptionLabel={(o) => o.name ?? ''}
         renderInput={(params) => (
           <TextField

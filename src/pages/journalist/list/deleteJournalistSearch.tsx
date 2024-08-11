@@ -47,6 +47,7 @@ export default function DeleteJournalistSearch({
   return (
     <DialogForm
       open={showConfirmDeleteSearchDialog}
+      setOpen={setShowConfirmDeleteSearchDialog}
       title={'Are you sure you want to delete the Saved List?'}
       onCancel={() => setShowConfirmDeleteSearchDialog(false)}
       moreActions={
