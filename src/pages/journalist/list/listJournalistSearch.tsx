@@ -52,7 +52,7 @@ export const ListJournalistSearch: FC<ListJournalistSearchProps> = ({ journalist
       id="journalist-searches"
       options={journalistSearches}
       value={journalistSearch}
-      label={'Add to Saved List'}
+      label={'Add to Saved List or Create New'}
       onInputChange={(_e, newValue): void => dJournalistSearches(newValue)}
       onChange={(_e, newValue) => {
         if (newValue) setJournalistSearch(newValue);

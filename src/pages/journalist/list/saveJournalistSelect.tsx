@@ -32,7 +32,7 @@ export default function SaveJournalistSelect({
   // TODO: remove
   // const [searchName, setSearchName] = useState<string | null>();
   // const [journalistSearches, setJournalistSearches] = useState<Array<JournalistSearchProps>>([]);
-  const [journalistSearch, setJournalistSearch] = useState<JournalistSearchProps>();
+  const [journalistSearch, setJournalistSearch] = useState<JournalistSearchProps | null>();
 
   // TODO: remove
   // useEffect(() => {
@@ -72,6 +72,7 @@ export default function SaveJournalistSelect({
             // TODO: remove
             // setSearchName(null);
             resetSearch();
+            setJournalistSearch(null)
           })
           .catch((err) => {
             if (err.response.status === 401) {
@@ -87,6 +88,7 @@ export default function SaveJournalistSelect({
             // TODO: remove
             // setSearchName(null);
             resetSearch();
+            setJournalistSearch(null)
           })
           .catch((err) => {
             if (err.response.status === 401) {
