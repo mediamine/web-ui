@@ -1,10 +1,11 @@
 import { DialogForm } from '@/components/mui/dialog';
 import { useToast } from '@/providers/ToastProvider';
 import { JournalistSearchProps } from '@/types/journalist';
-import { Button, FormControl, TextField } from '@mui/material';
+import { Button } from '@mui/material';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import ListJournalistSearch from './listJournalistSearch';
 
 const HOSTNAME = process.env.NEXT_PUBLIC_MEDIAMINE_API_HOSTNAME;
 
@@ -27,62 +28,55 @@ export default function SaveJournalistSearch({
 }: SaveJournalistSearchProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [searchName, setSearchName] = useState<string | null>();
-  const [journalistSearches, setJournalistSearches] = useState<Array<JournalistSearchProps>>([]);
+  const [journalistSearch, setJournalistSearch] = useState<JournalistSearchProps>();
 
   useEffect(() => {
-    axios
-      .get(`${HOSTNAME}/journalist-search`)
-      .then(({ data }) => {
-        setJournalistSearches(data.items);
-      })
-      .catch((err) => {
-        if (err.response.status === 401) {
-          router.push('/login?referrer=/journalist');
-        }
-      });
-  }, [filterByJournalistSearch?.uuid]);
+    setJournalistSearch(filterByJournalistSearch);
+  }, [filterByJournalistSearch]);
 
-  useEffect(() => {
-    setSearchName(filterByJournalistSearch?.name);
-  }, [filterByJournalistSearch?.name]);
-
-  const onSaveJournalistSearch = (copy: boolean) => {
+  const onSaveJournalistSearch = () => {
+    const searchName = journalistSearch?.inputValue;
+    const journalists = JSON.parse(journalistSearch?.journalists ?? '[]');
     const payload = {
       name: searchName,
       description: searchName,
-      search
+      search,
+      journalists: journalistSearch?.journalists
     };
 
-    if (filterByJournalistSearch?.uuid && !copy) {
+    if (journalistSearch?.uuid) {
       axios
-        .put(`${HOSTNAME}/journalist-search/${filterByJournalistSearch?.uuid}`, payload)
+        .put(`${HOSTNAME}/journalist-search/${journalistSearch?.uuid}`, payload)
         .then(() => {
           toast('Journalist Search Details are saved successfully.');
-          setShowConfirmSaveSearchDialog(false);
-          setOpenSearchDrawer(false);
-          setSearchName(null);
           resetSearch();
+          setJournalistSearch(undefined);
         })
         .catch((err) => {
           if (err.response.status === 401) {
             router.push('/login?referrer=/journalist');
           }
+        })
+        .finally(() => {
+          setOpenSearchDrawer(false);
+          setShowConfirmSaveSearchDialog(false);
         });
     } else {
       axios
         .post(`${HOSTNAME}/journalist-search`, payload)
         .then(() => {
           toast('Journalist Search Details are saved successfully.');
-          setShowConfirmSaveSearchDialog(false);
-          setOpenSearchDrawer(false);
-          setSearchName(null);
           resetSearch();
+          setJournalistSearch(undefined);
         })
         .catch((err) => {
           if (err.response.status === 401) {
             router.push('/login?referrer=/journalist');
           }
+        })
+        .finally(() => {
+          setOpenSearchDrawer(false);
+          setShowConfirmSaveSearchDialog(false);
         });
     }
   };
@@ -94,36 +88,12 @@ export default function SaveJournalistSearch({
       title={'Save List'}
       onCancel={() => setShowConfirmSaveSearchDialog(false)}
       moreActions={
-        <>
-          {filterByJournalistSearch?.uuid && (
-            <Button variant="contained" color="primary" onClick={() => onSaveJournalistSearch(false)}>
-              Save
-            </Button>
-          )}
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => onSaveJournalistSearch(true)}
-            disabled={Boolean(searchName && journalistSearches.find((s) => s?.name === searchName))}
-          >
-            Save a Copy
-          </Button>
-        </>
+        <Button variant="contained" color="primary" onClick={onSaveJournalistSearch}>
+          Save
+        </Button>
       }
     >
-      <FormControl size="small" className="w-full p-4">
-        {showConfirmSaveSearchDialog && (
-          <TextField
-            id="search-name"
-            variant="outlined"
-            color="primary"
-            size="small"
-            label="Name"
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-          />
-        )}
-      </FormControl>
+      <ListJournalistSearch {...{ journalistSearch, setJournalistSearch }} />
     </DialogForm>
   );
 }
