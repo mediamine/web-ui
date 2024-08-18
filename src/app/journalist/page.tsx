@@ -49,7 +49,7 @@ import {
 import axios from 'axios';
 import { debounce, isEmpty } from 'lodash';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { stylesheet } from 'typestyle';
 
 const HOSTNAME = process.env.NEXT_PUBLIC_MEDIAMINE_API_HOSTNAME;
@@ -114,7 +114,7 @@ export default function Journalists() {
   // const [selectedByJournalistSearch, setSelectedByJournalistSearch] = useState<JournalistSearchProps>();
   const [showConfirmSaveSearchDialog, setShowConfirmSaveSearchDialog] = useState(false);
 
-  const getJournalists = () => {
+  const getJournalists = useCallback(() => {
     setJournalists((prev) => ({ ...prev, isLoading: true }));
 
     axios
@@ -157,7 +157,21 @@ export default function Journalists() {
       .then(({ data }) => {
         setJournalistsWithFailedEmailValidation(data.total);
       });
-  };
+  }, [
+    filterByFormatTypes,
+    filterByJournalistIds,
+    filterByNameDebounced,
+    filterByNewsTypes,
+    filterByPublicationMediatypes,
+    filterByPublicationTiers,
+    filterByPublications,
+    filterByRegions,
+    filterByRoleTypes,
+    page,
+    router,
+    rowsPerPage,
+    showFailedEmailValidation
+  ]);
 
   const getPublications = () =>
     axios
@@ -172,17 +186,20 @@ export default function Journalists() {
       })
       .catch((err) => console.error(err));
 
-  const getPublicationMediaTypes = () =>
-    axios
-      .get(`${HOSTNAME}/publication-media-type`, {
-        params: {
-          ...(!isEmpty(filterByPublications) && { publicationIds: filterByPublications.map((p) => p.id) })
-        }
-      })
-      .then(({ data }) => {
-        setPublicationMediatypes(data.items);
-      })
-      .catch((err) => console.error(err));
+  const getPublicationMediaTypes = useCallback(
+    () =>
+      axios
+        .get(`${HOSTNAME}/publication-media-type`, {
+          params: {
+            ...(!isEmpty(filterByPublications) && { publicationIds: filterByPublications.map((p) => p.id) })
+          }
+        })
+        .then(({ data }) => {
+          setPublicationMediatypes(data.items);
+        })
+        .catch((err) => console.error(err)),
+    [filterByPublications]
+  );
 
   const exportJournalists = () =>
     axios
@@ -259,7 +276,7 @@ export default function Journalists() {
         setRegions(data.items);
       })
       .catch((err) => console.error(err));
-  }, []);
+  }, [getPublicationMediaTypes]);
 
   const dPublications = useMemo(() => debounce((value) => setPublicationsInput(value), 500), []);
   useEffect(() => {
@@ -286,7 +303,7 @@ export default function Journalists() {
       dFilterByName(filterByName);
       setPage(0);
     }
-  }, [filterByName]);
+  }, [dFilterByName, filterByName]);
 
   useEffect(() => {
     if (!(openEditDrawer || openDetailsDrawer)) {
@@ -308,7 +325,9 @@ export default function Journalists() {
     page,
     rowsPerPage,
     openEditDrawer,
-    openDetailsDrawer
+    openDetailsDrawer,
+    getJournalists,
+    getPublicationMediaTypes
   ]);
 
   const resetSearch = () => {
@@ -636,8 +655,6 @@ export default function Journalists() {
           <SaveJournalistSelect
             {...{
               selected,
-              // TODO: remove
-              // selectedByJournalistSearch,
               showConfirmSaveSearchDialog,
               setShowConfirmSaveSearchDialog,
               resetSearch

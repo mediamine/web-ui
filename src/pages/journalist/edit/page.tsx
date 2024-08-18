@@ -10,7 +10,7 @@ import { Box, Button, CircularProgress, IconButton, InputAdornment, Paper, Typog
 import axios from 'axios';
 import { debounce, isBoolean, uniqBy } from 'lodash';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const HOSTNAME = process.env.NEXT_PUBLIC_MEDIAMINE_API_HOSTNAME;
 
@@ -36,53 +36,39 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
   const [isValidated, setIsValidated] = useState<boolean>();
   const [isUserApproved, setIsUserApproved] = useState<boolean>();
 
-  const getPublications = (ids?: Array<string>) => {
-    if (ids) {
-      Promise.all([axios.get(`${HOSTNAME}/publication`)])
-        .then(
-          ([
-            resp
-            //, respBatch
-          ]) => {
+  const getPublications = useCallback(
+    (ids?: Array<string>) => {
+      if (ids) {
+        Promise.all([axios.get(`${HOSTNAME}/publication`)])
+          .then(([resp]) => {
             setPublications(uniqBy([...resp.data.items], 'id'));
-          }
-        )
-        .catch((err) => {
-          if (err.response.status === 401) {
-            router.push('/login?referrer=/journalist');
-          }
-        });
-    } else {
-      Promise.all([axios.get(`${HOSTNAME}/publication`)])
-        .then(([resp]) => {
-          setPublications(uniqBy([...resp.data.items], 'id'));
-        })
-        .catch((err) => {
-          if (err.response.status === 401) {
-            router.push('/login?referrer=/journalist');
-          }
-        });
-    }
-  };
+          })
+          .catch((err) => {
+            if (err.response.status === 401) {
+              router.push('/login?referrer=/journalist');
+            }
+          });
+      } else {
+        Promise.all([axios.get(`${HOSTNAME}/publication`)])
+          .then(([resp]) => {
+            setPublications(uniqBy([...resp.data.items], 'id'));
+          })
+          .catch((err) => {
+            if (err.response.status === 401) {
+              router.push('/login?referrer=/journalist');
+            }
+          });
+      }
+    },
+    [router]
+  );
 
   const getRegions = (ids?: Array<string>) => {
     if (ids) {
-      Promise.all([
-        axios.get(`${HOSTNAME}/region`)
-        // axios.get(`${HOSTNAME}/region/batch`, {
-        //   params: {
-        //     ids
-        //   }
-        // })
-      ])
-        .then(
-          ([
-            resp
-            // , respBatch
-          ]) => {
-            setRegions(uniqBy([...resp.data.items], 'id'));
-          }
-        )
+      Promise.all([axios.get(`${HOSTNAME}/region`)])
+        .then(([resp]) => {
+          setRegions(uniqBy([...resp.data.items], 'id'));
+        })
         .catch((err) => console.error(err));
     } else {
       Promise.all([axios.get(`${HOSTNAME}/region`)])
@@ -162,7 +148,7 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
 
     getPublications();
     getRegions();
-  }, []);
+  }, [getPublications]);
 
   useEffect(() => {
     const getJournalist = () => {
@@ -182,7 +168,7 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
     if (id) {
       getJournalist();
     }
-  }, [id]);
+  }, [id, getPublications]);
 
   const dPublicationsInput = useMemo(() => debounce((value) => setPublicationsInput(value), 500), []);
   useEffect(() => {
@@ -198,6 +184,8 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
         })
         .catch((err) => console.error(err));
     }
+    // dependencies array can't add publications because it gets modified in the hook callback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [publicationsInput]);
 
   const dRegionsInput = useMemo(() => debounce((value) => setRegionsInput(value), 500), []);
@@ -214,6 +202,8 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
         })
         .catch((err) => console.error(err));
     }
+    // dependencies array can't add regions because it gets modified in the hook callback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regionsInput]);
 
   const onArchiveJournalist = () => {

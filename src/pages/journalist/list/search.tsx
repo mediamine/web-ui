@@ -115,7 +115,7 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
           router.push('/login?referrer=/journalist');
         }
       });
-  }, []);
+  }, [router]);
 
   const dJournalistSearches = useMemo(() => debounce((value) => setJournalistSearchesInput(value), 500), []);
   useEffect(() => {
@@ -153,18 +153,21 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
       try {
         const d = JSON.parse(filterByJournalistSearch?.journalists);
         if (d) setFilterByJournalistIds(d);
-        // TODO: remove
-        // setSelected(d);
-        // To pass the details of the selected search to the parent component which will require them to update more selections
-        // setSelectedByJournalistSearch(filterByJournalistSearch);
       } catch (error) {
         console.error('Unable to parse the filterByJournalistSearches string');
       }
     }
-
-    // TODO: remove
-    // setSearchName(filterByJournalistSearch?.name);
-  }, [filterByJournalistSearch]);
+  }, [
+    filterByJournalistSearch,
+    setFilterByFormatTypes,
+    setFilterByJournalistIds,
+    setFilterByName,
+    setFilterByNewsTypes,
+    setFilterByPublicationMediatypes,
+    setFilterByPublicationTiers,
+    setFilterByPublications,
+    setFilterByRoleType
+  ]);
 
   return (
     <>

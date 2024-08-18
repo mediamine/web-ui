@@ -11,13 +11,6 @@ interface DialogFormProps {
 }
 
 export const DialogForm: FC<DialogFormProps> = ({ open, setOpen, title, children, onCancel, moreActions }): ReactElement => {
-  // TODO: remove
-  // const [openDialog, setOpenDialog] = useState(showConfirmSaveSearchDialog);
-
-  // useEffect(() => {
-  //   setOpenDialog(showConfirmSaveSearchDialog);
-  // }, [showConfirmSaveSearchDialog]);
-
   return (
     <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="md" TransitionComponent={Fade} keepMounted>
       <DialogTitle className="p-4">{title}</DialogTitle>

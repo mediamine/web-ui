@@ -29,7 +29,7 @@ export const ListJournalistSearch: FC<ListJournalistSearchProps> = ({ journalist
           router.push('/login?referrer=/journalist');
         }
       });
-  }, []);
+  }, [router]);
 
   const dJournalistSearches = useMemo(() => debounce((value) => setJournalistSearchesInput(value), 500), []);
   useEffect(() => {
@@ -55,7 +55,7 @@ export const ListJournalistSearch: FC<ListJournalistSearchProps> = ({ journalist
       label={'Add to Saved List or Create New'}
       onInputChange={(_e, newValue): void => dJournalistSearches(newValue)}
       onChange={(_e, newValue) => {
-        if (newValue) setJournalistSearch(newValue);
+        if (newValue) setJournalistSearch(newValue as JournalistSearchProps);
       }}
       disablePortal={false}
     />

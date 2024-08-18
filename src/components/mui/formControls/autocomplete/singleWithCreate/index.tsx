@@ -13,7 +13,7 @@ interface FormControlAutocompleteSingleWithCreateProps<T extends Option> {
   options: Array<T>;
   value: T | undefined;
   label: string;
-  onChange: (_e: any, newValue: T | null) => void;
+  onChange: (_e: any, newValue: string | T | null) => void;
   onInputChange?: (_e: any, newValue: string) => void;
   disablePortal?: boolean;
 }
@@ -52,22 +52,22 @@ export function FormControlAutocompleteSingleWithCreate<T extends Option>({
         clearOnBlur
         handleHomeEndKeys
         freeSolo
-        filterOptions={(options, params: FilterOptionsState<Option>) => {
-          const filtered = filter(options, params);
+        filterOptions={(options, params) => {
+          const filtered = filter(options, params as FilterOptionsState<Option>);
 
           const { inputValue } = params;
 
           // Suggest the creation of a new value
           const isExisting = options.some((option) => inputValue === option.name);
           if (inputValue !== '' && !isExisting) {
-            const newFilterOption: Option = {
+            const newFilterOption = {
               inputValue,
               name: `Create: "${inputValue}"`
             };
             filtered.push(newFilterOption);
           }
 
-          return filtered;
+          return filtered as T[];
         }}
         getOptionLabel={(option) => {
           // Value selected with enter, right from the input

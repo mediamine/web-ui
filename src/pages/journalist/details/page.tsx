@@ -8,7 +8,7 @@ import { Box, IconButton, Link, Paper, Typography } from '@mui/material';
 import axios from 'axios';
 import { flatMap, uniq } from 'lodash';
 import { useRouter } from 'next/navigation';
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { classes, stylesheet } from 'typestyle';
 import Field from './field';
 
@@ -22,7 +22,7 @@ export const JournalistDetails = ({ id }: JournalistDetailsProps): ReactElement 
   const router = useRouter();
   const [journalist, setJournalist] = useState<JournalistProps>();
 
-  const getJournalist = () => {
+  const getJournalist = useCallback(() => {
     axios
       .get(`${HOSTNAME}/journalist/${id}`)
       .then(({ data }) => {
@@ -33,11 +33,11 @@ export const JournalistDetails = ({ id }: JournalistDetailsProps): ReactElement 
           router.push('/login?referrer=/journalist');
         }
       });
-  };
+  }, [id, router]);
 
   useEffect(() => {
     if (id) getJournalist();
-  }, [id]);
+  }, [id, getJournalist]);
 
   return (
     <Box className="h-screen p-8 flex flex-col gap-2">
