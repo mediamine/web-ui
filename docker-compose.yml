@@ -1,0 +1,19 @@
+version: '3.9'
+services:
+  web-ui:
+    image: mediamine/web-ui:latest
+    container_name: mediamine-web-ui
+    ports:
+      - '3000:3000'
+    restart: always
+  nginx:
+    image: mediamine/nginx:latest
+    container_name: mediamine-nginx
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/conf/:/etc/nginx/conf.d
+      - ./nginx/certs/:/etc/nginx/ssl
+      - ./nginx/logs/:/var/logs/nginx/localhost/
+    restart: always
