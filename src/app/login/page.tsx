@@ -16,7 +16,7 @@ function Login() {
   async function onSubmit(e: { preventDefault: () => void }) {
     e.preventDefault();
     axios
-      .post(`${HOSTNAME}/login`, form)
+      .post(`${HOSTNAME}/auth/login`, form)
       .then(({ data }) => {
         localStorage.setItem('token', data.token);
         localStorage.setItem('editor', data.editor);
