@@ -41,7 +41,7 @@ export const JournalistDetails = ({ id }: JournalistDetailsProps): ReactElement 
 
   return (
     <Box className="h-screen p-8 flex flex-col gap-2">
-      <Paper className="rounded-none shadow-none">
+      <Paper className="rounded-none !shadow-none">
         <Typography variant="h5" className="pb-8">{`${journalist?.first_name} ${journalist?.last_name}`}</Typography>
         <div className={classes(styles.fields, 'overflow-y-scroll')}>
           <Field name={'Email'}>{journalist?.email}</Field>
@@ -75,7 +75,7 @@ export const JournalistDetails = ({ id }: JournalistDetailsProps): ReactElement 
           </Field>
         </div>
       </Paper>
-      <Paper className="rounded-none shadow-none">
+      <Paper className="rounded-none !shadow-none">
         <div className="flex flex-col gap-2 py-2">
           <Typography variant="body2">{"Something need updating, let us know here and we'll get it sorted."}</Typography>
           <Link href="mailto:info@mediamine.co.nz" underline="none" target="_blank" rel="noreferrer" className="flex gap-1">
