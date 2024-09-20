@@ -141,6 +141,7 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
         if (d.filterByPublications) setFilterByPublications(d.filterByPublications);
         if (d.filterByPublicationMediatypes) setFilterByPublicationMediatypes(d.filterByPublicationMediatypes);
         if (d.filterByPublicationTiers) setFilterByPublicationTiers(d.filterByPublicationTiers);
+        if (d.filterByRegions) setFilterByRegions(d.filterByRegions);
         if (d.filterByFormatTypes) setFilterByFormatTypes(d.filterByFormatTypes);
         if (d.filterByNewsTypes) setFilterByNewsTypes(d.filterByNewsTypes);
         if (d.filterByRoleTypes) setFilterByRoleType(d.filterByRoleTypes);
@@ -159,14 +160,15 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
     }
   }, [
     filterByJournalistSearch,
-    setFilterByFormatTypes,
-    setFilterByJournalistIds,
     setFilterByName,
-    setFilterByNewsTypes,
+    setFilterByPublications,
     setFilterByPublicationMediatypes,
     setFilterByPublicationTiers,
-    setFilterByPublications,
-    setFilterByRoleType
+    setFilterByRegions,
+    setFilterByFormatTypes,
+    setFilterByNewsTypes,
+    setFilterByRoleType,
+    setFilterByJournalistIds
   ]);
 
   return (
@@ -326,6 +328,7 @@ export const AdvancedSearch: FC<AdvancedSearchProps> = ({
             ...(!isEmpty(filterByPublications) && { filterByPublications }),
             ...(!isEmpty(filterByPublicationMediatypes) && { filterByPublicationMediatypes }),
             ...(!isEmpty(filterByPublicationTiers) && { filterByPublicationTiers }),
+            ...(!isEmpty(filterByRegions) && { filterByRegions }),
             ...(!isEmpty(filterByFormatTypes) && { filterByFormatTypes }),
             ...(!isEmpty(filterByNewsTypes) && { filterByNewsTypes }),
             ...(!isEmpty(filterByRoleTypes) && { filterByRoleTypes })
