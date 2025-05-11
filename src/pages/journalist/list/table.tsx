@@ -239,7 +239,12 @@ export default function JournalistListTable({
                   <Typography variant="body2" className="leading-6">
                     All journalists on this page are selected.
                   </Typography>
-                  <Button variant="text" className="py-0 leading-6" onClick={() => setSelectAll(true)}>
+                  <Button
+                    variant="text"
+                    className="py-0 leading-6"
+                    onClick={() => setSelectAll(true)}
+                    sx={{ paddingTop: 0, paddingBottom: 0 }} // to solve a prod bug where the padding-y was getting set to 6px causing the whole page to shift down
+                  >
                     Select all journalists
                   </Button>
                 </div>
