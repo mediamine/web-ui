@@ -1,12 +1,22 @@
 'use client';
 
 import { FormControlAutocompleteMulti } from '@/components/mui/formControls/autocomplete/multi';
+import { FormControlAutocompleteSingle } from '@/components/mui/formControls/autocomplete/single';
 import { FormControlTextField } from '@/components/mui/formControls/textField';
 import { useToast } from '@/providers/ToastProvider';
-import { FormatTypeProps, JournalistProps, NewsTypeProps, PublicationProps, RegionProps, RoleTypeProps } from '@/types/journalist';
+import {
+  FormatTypeProps,
+  JournalistProps,
+  NewsTypeProps,
+  PublicationFeedProps,
+  PublicationProps,
+  RegionProps,
+  RoleToFeedMapProps,
+  RoleTypeProps
+} from '@/types/journalist';
 import HowToRegIcon from '@mui/icons-material/HowToReg';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
-import { Box, Button, CircularProgress, IconButton, InputAdornment, Paper, Typography } from '@mui/material';
+import { Box, Button, Chip, CircularProgress, Divider, IconButton, InputAdornment, Paper, Typography } from '@mui/material';
 import axios from 'axios';
 import { debounce, isBoolean, uniqBy } from 'lodash';
 import { useRouter } from 'next/navigation';
@@ -29,19 +39,28 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
   const [roleTypes, setRoleTypes] = useState<Array<RoleTypeProps>>([]);
   const [publications, setPublications] = useState<Array<PublicationProps>>([]);
   const [publicationsInput, setPublicationsInput] = useState<string>('');
+  const [publicationFeeds, setPublicationFeeds] = useState<Array<PublicationFeedProps>>([]);
   const [regions, setRegions] = useState<Array<RegionProps>>([]);
   const [regionsInput, setRegionsInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isNewValidated, setIsNewValidated] = useState<boolean>(false);
   const [isValidated, setIsValidated] = useState<boolean>();
   const [isUserApproved, setIsUserApproved] = useState<boolean>();
+  const [roleToFeedMap, setRoleToFeedMap] = useState<RoleToFeedMapProps>({});
 
   const getPublications = useCallback(
     (ids?: Array<string>) => {
       if (ids) {
-        Promise.all([axios.get(`${HOSTNAME}/publication`)])
+        Promise.all([axios.get(`${HOSTNAME}/publication`, { params: { ids } })])
           .then(([resp]) => {
-            setPublications(uniqBy([...resp.data.items], 'id'));
+            const publications = uniqBy([...resp.data.items], 'id');
+            setPublications(publications);
+            setPublicationFeeds(
+              uniqBy(
+                publications.flatMap((p) => p.feed ?? []),
+                'id'
+              )
+            );
           })
           .catch((err) => {
             if (err.response.status === 401) {
@@ -160,6 +179,7 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
           setTitle(`Edit Journalist: ${data?.first_name} ${data?.last_name}`);
           getPublications(data.publications?.map((p: PublicationProps) => p.id));
           getRegions(data.regions?.map((r: RegionProps) => r.id));
+          setRoleToFeedMap(data.roleToFeedMap);
           setIsLoading(false);
         })
         .catch((err) => console.error(err));
@@ -208,10 +228,7 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
 
   const onArchiveJournalist = () => {
     axios
-      .put(`${HOSTNAME}/journalist/batch`, {
-        ids: [id],
-        enabled: false
-      })
+      .put(`${HOSTNAME}/journalist/${id}/archive`)
       .then(() => {
         toast('Journalist is archived successfully.');
       })
@@ -230,6 +247,7 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
       formatTypeIds: journalist?.format_types?.map((ft) => ft.id),
       newsTypeIds: journalist?.news_types?.map((nt) => nt.id),
       roleTypeIds: journalist?.role_types?.map((rt) => rt.id),
+      roleToFeedMap,
       publicationIds: journalist?.publications?.map((p) => p.id),
       regionIds: journalist?.regions?.map((r) => r.id)
     };
@@ -343,14 +361,6 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
               />
 
               <FormControlAutocompleteMulti
-                id="role-types"
-                options={roleTypes}
-                value={roleTypes.filter((rt) => journalist?.role_types?.map((jrt: RoleTypeProps) => jrt.id).includes(rt.id))}
-                label={'Job Titles'}
-                onChange={(_, newValue) => setJournalist({ ...journalist, role_types: newValue as Array<NewsTypeProps> })}
-              />
-
-              <FormControlAutocompleteMulti
                 id="publications"
                 options={publications}
                 value={journalist?.publications}
@@ -358,8 +368,61 @@ export default function EditJournalist({ id, setOpenEditDrawer }: EditJournalist
                 onInputChange={(_, newValue) => {
                   if (newValue !== '') dPublicationsInput(newValue);
                 }}
-                onChange={(_, newValue) => setJournalist({ ...journalist, publications: newValue as Array<PublicationProps> })}
+                onChange={(_, newValue) => {
+                  const jPublications = newValue as Array<PublicationProps>;
+                  setJournalist({ ...journalist, publications: jPublications });
+
+                  const pIds = jPublications.map((p) => p.id);
+                  setPublicationFeeds(
+                    uniqBy(
+                      publications.filter((p) => pIds.includes(p.id)).flatMap((p) => p.feed ?? []),
+                      'id'
+                    )
+                  );
+                }}
               />
+
+              <FormControlAutocompleteMulti
+                id="role-types"
+                options={roleTypes}
+                value={roleTypes.filter((rt) => journalist?.role_types?.map((jrt: RoleTypeProps) => jrt.id).includes(rt.id))}
+                label={'Job Titles'}
+                onChange={(_, newValue) => {
+                  const role_types = newValue as Array<NewsTypeProps>;
+                  setRoleToFeedMap(
+                    role_types.reduce((memo: { [key: string]: string | null }, rt) => {
+                      memo[rt.id] = roleToFeedMap[rt.id] ?? null;
+                      return memo;
+                    }, {})
+                  );
+                  setJournalist({ ...journalist, role_types });
+                }}
+              />
+
+              {publicationFeeds.length > 0 && (
+                <>
+                  <Divider textAlign="left">
+                    <Chip label="Feeds for Job Titles" size="small" />
+                  </Divider>
+                  {Object.keys(roleToFeedMap).map((rfid) => (
+                    <FormControlAutocompleteSingle
+                      key={rfid}
+                      id={`rfid-${rfid}`}
+                      options={publicationFeeds}
+                      value={publicationFeeds.find((pf) => pf.id === roleToFeedMap[rfid])}
+                      label={`Feed for Job Title ${journalist?.role_types?.find((rt) => rt.id === rfid)?.name}`}
+                      onChange={(_e, newValue) => {
+                        if (newValue) {
+                          setRoleToFeedMap({ ...roleToFeedMap, [rfid]: newValue.id });
+                        } else {
+                          setRoleToFeedMap({ ...roleToFeedMap, [rfid]: null });
+                        }
+                      }}
+                    />
+                  ))}
+                  <Divider />
+                </>
+              )}
 
               <FormControlAutocompleteMulti
                 id="regions"

@@ -37,11 +37,14 @@ import {
   ClickAwayListener,
   Divider,
   Drawer,
+  FormControlLabel,
+  FormGroup,
   IconButton,
   MenuItem,
   MenuList,
   Paper,
   Popover,
+  Switch,
   Toolbar,
   Tooltip,
   Typography
@@ -100,6 +103,10 @@ export default function Journalists() {
   const [filterByRegions, setFilterByRegions] = useState<Array<RegionProps>>([]);
   const [filterByJournalistIds, setFilterByJournalistIds] = useState<Array<string>>([]);
 
+  const [orderBy, setOrderBy] = useState<{ columnId: string; direction: 'asc' | 'desc' }>({ columnId: 'first_name', direction: 'asc' });
+
+  const [isTableTextWrap, setIsTableTextWrap] = useState<boolean>(false);
+
   const [journalistsWithFailedEmailValidation, setJournalistsWithFailedEmailValidation] = useState(0);
   const [showFailedEmailValidation, setShowFailedEmailValidation] = useState<boolean>(false);
 
@@ -122,7 +129,7 @@ export default function Journalists() {
         params: {
           marker: String(page * rowsPerPage),
           limit: String(rowsPerPage),
-          sort: 'name:asc',
+          sort: `${orderBy.columnId}:${orderBy.direction}`,
           name: filterByNameDebounced,
           ...(!isEmpty(filterByPublications) && { publicationIds: filterByPublications.map((p) => p.id) }),
           ...(!isEmpty(filterByPublicationMediatypes) && {
@@ -167,6 +174,8 @@ export default function Journalists() {
     filterByPublications,
     filterByRegions,
     filterByRoleTypes,
+    orderBy.columnId,
+    orderBy.direction,
     page,
     router,
     rowsPerPage,
@@ -538,6 +547,13 @@ export default function Journalists() {
                 </Button>
               </div>
 
+              <FormGroup>
+                <FormControlLabel
+                  control={<Switch checked={isTableTextWrap} onChange={() => setIsTableTextWrap(!isTableTextWrap)} />}
+                  label={<Typography variant="body2">{'Wrap Text'}</Typography>}
+                />
+              </FormGroup>
+
               <EditorActions
                 {...{
                   setOpenEditDrawer,
@@ -565,6 +581,9 @@ export default function Journalists() {
             <JournalistListTable
               {...{
                 journalists,
+                publications,
+                orderBy,
+                setOrderBy,
                 page,
                 setPage,
                 rowsPerPage,
@@ -576,7 +595,8 @@ export default function Journalists() {
                 setSelectAll,
                 setJournalistId,
                 setOpenEditDrawer,
-                setOpenDetailsDrawer
+                setOpenDetailsDrawer,
+                isTableTextWrap
               }}
             />
           </Paper>

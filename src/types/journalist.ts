@@ -9,12 +9,19 @@ export interface RoleTypeProps extends TypeProps {}
 export interface PublicationProps extends TypeProps {
   mediatypes?: Array<string>;
   tiers?: Array<string>;
+  feed?: Array<PublicationFeedProps>;
 }
 export interface PublicationMediaTypeProps {
   mediatype: string;
 }
 export interface PublicationTierProps extends TypeProps {}
+export interface PublicationFeedProps extends TypeProps {
+  broken_url: string;
+}
 export interface RegionProps extends TypeProps {}
+export interface RoleToFeedMapProps {
+  [key: string]: string | null;
+}
 
 export interface JournalistProps {
   id?: string;
@@ -33,6 +40,7 @@ export interface JournalistProps {
   format_types?: Array<FormatTypeProps>;
   news_types?: Array<NewsTypeProps>;
   role_types?: Array<RoleTypeProps>;
+  roleToFeedMap?: RoleToFeedMapProps;
   publications?: Array<PublicationProps>;
   regions?: Array<RegionProps>;
 }

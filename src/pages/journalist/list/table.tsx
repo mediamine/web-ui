@@ -3,7 +3,7 @@
 import { StyledTableCell, StyledTableRow } from '@/components/mui/table/styledComponents';
 import { usePermissions } from '@/providers/AuthProvider';
 import { AsyncState } from '@/types/asyncState';
-import { JournalistProps } from '@/types/journalist';
+import { JournalistProps, PublicationProps } from '@/types/journalist';
 import {
   Alert,
   Box,
@@ -20,25 +20,31 @@ import {
   Typography
 } from '@mui/material';
 import TableRow from '@mui/material/TableRow';
-import { flatMap, uniq } from 'lodash';
+import TableSortLabel from '@mui/material/TableSortLabel';
+import { flatMap, uniq, uniqBy } from 'lodash';
 import React, { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import { classes, stylesheet } from 'typestyle';
 
 const HOSTNAME = process.env.NEXT_PUBLIC_MEDIAMINE_API_HOSTNAME;
 
-type Format = Array<{ name: string; mediatypes?: string | string[]; tiers?: string | string[] }>;
+type Format = Array<{ id: string; name: string; mediatypes?: string | string[]; tiers?: string | string[] }>;
 
 interface Column {
   id?: 'first_name' | 'email' | 'format_types' | 'news_types' | 'role_types' | 'publications' | 'regions';
   label?: string;
   minWidth?: number;
   width?: number;
+  maxWidth?: number;
   align?: 'right';
+  sortable?: boolean;
   Cell?: (o: { value: Format | string; row: JournalistProps }) => string | JSX.Element;
 }
 
 interface JournalistsTableProps {
   journalists: AsyncState<Array<JournalistProps>>;
+  publications: Array<PublicationProps>;
+  orderBy: { columnId: string; direction: 'asc' | 'desc' };
+  setOrderBy: Dispatch<SetStateAction<{ columnId: string; direction: 'asc' | 'desc' }>>;
   page: number;
   setPage: Dispatch<SetStateAction<number>>;
   rowsPerPage: number;
@@ -51,6 +57,7 @@ interface JournalistsTableProps {
   setJournalistId: Dispatch<SetStateAction<string | undefined>>;
   setOpenEditDrawer: Dispatch<SetStateAction<boolean>>;
   setOpenDetailsDrawer: Dispatch<SetStateAction<boolean>>;
+  isTableTextWrap: boolean;
 }
 
 export default function JournalistListTable({
@@ -59,6 +66,9 @@ export default function JournalistListTable({
     hasError: false,
     value: []
   },
+  publications,
+  orderBy,
+  setOrderBy,
   page,
   setPage,
   rowsPerPage,
@@ -70,9 +80,14 @@ export default function JournalistListTable({
   setSelectAll,
   setJournalistId,
   setOpenEditDrawer,
-  setOpenDetailsDrawer
+  setOpenDetailsDrawer,
+  isTableTextWrap
 }: JournalistsTableProps) {
   const { isEditor } = usePermissions();
+  const publicationFeeds = uniqBy(
+    publications.flatMap((p) => p.feed ?? []),
+    'id'
+  );
 
   const columns: Column[] = [
     {
@@ -108,7 +123,7 @@ export default function JournalistListTable({
         const title = (value as Format)?.map((p) => p.name).join(', ');
         return (
           <Tooltip arrow {...{ title }}>
-            <span className="truncate">
+            <span className={isTableTextWrap ? '' : 'truncate'}>
               <span>{title}</span>
             </span>
           </Tooltip>
@@ -119,11 +134,16 @@ export default function JournalistListTable({
       id: 'role_types',
       label: 'Job Titles',
       width: 200,
-      Cell: ({ value }) => {
-        const title = (value as Format)?.map((p) => p.name).join(', ');
+      Cell: ({ value, row }) => {
+        const title = (value as Format)
+          ?.map((rt) => {
+            const f = publicationFeeds.find((pf) => row.roleToFeedMap?.[rt.id] === pf.id);
+            return `${rt.name} ${f ? `[${f.name}]` : ''}`;
+          })
+          .join(', ');
         return (
           <Tooltip arrow {...{ title }}>
-            <span className="truncate">
+            <span className={isTableTextWrap ? '' : 'truncate'}>
               <span>{title}</span>
             </span>
           </Tooltip>
@@ -138,7 +158,7 @@ export default function JournalistListTable({
         const title = (value as Format)?.map((p) => p.name).join(', ');
         return (
           <Tooltip arrow {...{ title }}>
-            <span className="truncate">
+            <span className={isTableTextWrap ? '' : 'truncate'}>
               <span>{title}</span>
             </span>
           </Tooltip>
@@ -153,7 +173,7 @@ export default function JournalistListTable({
         const title = (value as Format)?.map((p) => p.name).join(', ');
         return (
           <Tooltip arrow {...{ title }}>
-            <span className="truncate">
+            <span className={isTableTextWrap ? '' : 'truncate'}>
               <span>{title}</span>
             </span>
           </Tooltip>
@@ -168,7 +188,7 @@ export default function JournalistListTable({
         const title = uniq(flatMap((value as Format)?.map((p) => p.mediatypes))).join(', ');
         return (
           <Tooltip arrow {...{ title }}>
-            <span className="truncate">
+            <span className={isTableTextWrap ? '' : 'truncate'}>
               <span>{title}</span>
             </span>
           </Tooltip>
@@ -183,7 +203,7 @@ export default function JournalistListTable({
         const title = uniq(flatMap((value as Format)?.map((p) => p.tiers))).join(', ');
         return (
           <Tooltip arrow {...{ title }}>
-            <span className="truncate">
+            <span className={isTableTextWrap ? '' : 'truncate'}>
               <span>{title}</span>
             </span>
           </Tooltip>
@@ -198,7 +218,7 @@ export default function JournalistListTable({
         const title = (value as Format)?.map((p) => p.name).join(', ');
         return (
           <Tooltip arrow {...{ title }}>
-            <span className="truncate">
+            <span className={isTableTextWrap ? '' : 'truncate'}>
               <span>{title}</span>
             </span>
           </Tooltip>
@@ -271,10 +291,36 @@ export default function JournalistListTable({
                     />
                   </TableCell>
                   {columns.map((column) => (
-                    <TableCell key={column.id} align={column.align} style={{ minWidth: column.minWidth, width: column.width }}>
-                      <Typography variant="body2" className="px-4">
-                        {column.label}
-                      </Typography>
+                    <TableCell
+                      key={column.id}
+                      align={column.align}
+                      style={{
+                        minWidth: column.minWidth,
+                        width: column.width,
+                        maxWidth: column.maxWidth
+                      }}
+                    >
+                      {column.sortable ? (
+                        <TableSortLabel
+                          active={orderBy.columnId === column.id}
+                          direction={orderBy.columnId === column.id ? orderBy.direction : 'asc'}
+                          onClick={() =>
+                            setOrderBy((prev) => {
+                              if (orderBy.columnId === column.id)
+                                return { columnId: prev.columnId, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+                              return { columnId: String(column.id), direction: 'asc' };
+                            })
+                          }
+                        >
+                          <Typography variant="body2" className="px-4">
+                            {column.label}
+                          </Typography>
+                        </TableSortLabel>
+                      ) : (
+                        <Typography variant="body2" className="px-4">
+                          {column.label}
+                        </Typography>
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -300,7 +346,15 @@ export default function JournalistListTable({
                       {columns.map((column) => {
                         const value = row[column.id!]!;
                         return (
-                          <StyledTableCell key={column.id} align={column.align} style={{ minWidth: column.minWidth, width: column.width }}>
+                          <StyledTableCell
+                            key={column.id}
+                            align={column.align}
+                            style={{
+                              minWidth: column.minWidth,
+                              width: column.width,
+                              maxWidth: column.maxWidth
+                            }}
+                          >
                             <div className="inline-block" style={{ width: column.width }}>
                               <Typography variant="body2" gutterBottom className="w-full flex px-4">
                                 <>
