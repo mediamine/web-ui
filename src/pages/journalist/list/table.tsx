@@ -21,7 +21,8 @@ import {
 } from '@mui/material';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
-import { flatMap, uniq, uniqBy } from 'lodash';
+import { uniq, uniqBy } from 'lodash';
+import flatMap from 'lodash/flatMap';
 import React, { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import { classes, stylesheet } from 'typestyle';
 
@@ -85,7 +86,7 @@ export default function JournalistListTable({
 }: JournalistsTableProps) {
   const { isEditor } = usePermissions();
   const publicationFeeds = uniqBy(
-    publications.flatMap((p) => p.feed ?? []),
+    flatMap(publications, (p) => p.feed ?? []),
     'id'
   );
 
